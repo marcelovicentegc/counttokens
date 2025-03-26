@@ -8,7 +8,8 @@ from rich.table import Table
 from rich.progress import Progress
 from rich import box
 import pandas as pd
-from .core import TokenCounter
+from core.counttokens import TokenCounter, InteractiveTokenCounter
+from core.ingest import Ingest
 
 console = Console()
 
@@ -16,14 +17,19 @@ console = Console()
 @click.version_option('0.1.0')
 def main():
     """
-    CountTokens - A CLI tool for counting tokens in text datasets using tiktoken.
+    VTEX AI CLI - A CLI to help developers with AI-related tasks.
     
-    This tool helps you analyze the number of tokens in text, files, or entire directories.
+    This tool provides functionalities to count tokens in text, files, or directories.
+    It also includes an option to ingest curated data from VTEX repositories.
     """
     pass
 
+@main.group()
+def counttokens():
+    """Count tokens in text, files, or directories."""
+    pass
 
-@main.command()
+@counttokens.command()
 @click.argument('text', type=str)
 @click.option('--model', '-m', type=str, default='gpt-3.5-turbo',
               help='The model to use for token counting (e.g., gpt-3.5-turbo, gpt-4).')
@@ -43,8 +49,7 @@ def text(text: str, model: str):
     table.add_row(preview, str(len(text)), str(token_count))
     console.print(table)
 
-
-@main.command()
+@counttokens.command()
 @click.argument('file_path', type=click.Path(exists=True, file_okay=True, dir_okay=False))
 @click.option('--model', '-m', type=str, default='gpt-3.5-turbo',
               help='The model to use for token counting (e.g., gpt-3.5-turbo, gpt-4).')
@@ -58,8 +63,7 @@ def file(file_path: str, model: str, output: Optional[str]):
     
     _display_result(result, output)
 
-
-@main.command()
+@counttokens.command()
 @click.argument('directory_path', type=click.Path(exists=True, file_okay=False, dir_okay=True))
 @click.option('--model', '-m', type=str, default='gpt-3.5-turbo',
               help='The model to use for token counting (e.g., gpt-3.5-turbo, gpt-4).')
@@ -128,6 +132,27 @@ def directory(directory_path: str, model: str, extensions: List[str], recursive:
         _save_results(results, output)
         console.print(f"[bold green]Results saved to: {output}[/bold green]")
 
+@counttokens.command()
+def interactive():
+    """
+    Interactive mode for counting tokens.
+    
+    This command provides an interactive interface for counting tokens in text, files, or directories.
+    It guides you through the process with prompts and menus.
+    """
+    interactive_counter = InteractiveTokenCounter()
+    interactive_counter.run()
+
+@main.command()
+def ingest():
+    """
+    Ingest curated data from VTEX repositories.
+    
+    This command allows you to ingest specific data from the VTEX repositories.
+    It can clone the repository if needed or use an existing local copy.
+    """
+    ingest_tool = Ingest()
+    ingest_tool.run()
 
 def _display_result(result: dict, output: Optional[str] = None):
     """Display the result in a table and optionally save to a file."""
@@ -155,7 +180,6 @@ def _display_result(result: dict, output: Optional[str] = None):
         _save_results([result], output)
         console.print(f"[bold green]Result saved to: {output}[/bold green]")
 
-
 def _save_results(results: List[dict], output_path: str):
     """Save results to a file in JSON or CSV format."""
     _, ext = os.path.splitext(output_path)
@@ -173,7 +197,6 @@ def _save_results(results: List[dict], output_path: str):
         # Default to JSON if extension not specified
         with open(output_path, 'w', encoding='utf-8') as f:
             json.dump(results, f, indent=2)
-
 
 if __name__ == "__main__":
     main()
